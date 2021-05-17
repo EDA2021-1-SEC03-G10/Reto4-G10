@@ -27,6 +27,10 @@ from DISClib.ADT import list as lt
 assert cf
 
 
+lpsfile = 'landing_points.csv'
+connectionsfile = 'connections.csv'
+countriesfile = 'countries.csv'
+
 """
 La vista se encarga de la interacción con el usuario
 Presenta el menu de opciones y por cada seleccion
@@ -35,9 +39,13 @@ operación solicitada
 """
 
 def printMenu():
+    print("\n")
+    print("*******************************************")
     print("Bienvenido")
-    print("1- Cargar información en el catálogo")
-    print("2- ")
+    print("1- Inicializar Analizador")
+    print("2- Cargar información")
+    print("0- Salir")
+    print("*******************************************")
 
 catalog = None
 
@@ -48,10 +56,18 @@ while True:
     printMenu()
     inputs = input('Seleccione una opción para continuar\n')
     if int(inputs[0]) == 1:
-        print("Cargando información de los archivos ....")
+        print("\nInicializando....")
+        cont = controller.init()
 
     elif int(inputs[0]) == 2:
-        pass
+        print("Cargando información de los archivos ....")
+        controller.loadServices(cont, lpsfile, connectionsfile, countriesfile)
+        
+        # numedges = controller.totalConnections(cont)
+        # numvertex = controller.totalStops(cont)
+        # print('Numero de vertices: ' + str(numvertex))
+        # print('Numero de arcos: ' + str(numedges))
+        # print('El limite de recursion actual: ' + str(sys.getrecursionlimit()))
 
     else:
         sys.exit(0)
