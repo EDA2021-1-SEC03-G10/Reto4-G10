@@ -1,3 +1,7 @@
+Estudiante 1 Lindsay Vanessa Pinto Morato cód. 202023138 lvpintom@uniandes.edu.co
+Estudiante 2 José Daniel Montero cód. 202012732  j.monterog@uniandes.edu.co
+
+
 #ISIS1225 - Librerias de soporte
 
 Este proyecto contiene los Tipos abstractos de datos, estructuras de datos y algoritmos requeridos por el curso ISIS1225-Estructuras de Datos y Algoritmos
