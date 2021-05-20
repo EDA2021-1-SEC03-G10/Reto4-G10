@@ -32,14 +32,15 @@
 # from DISClib.Algorithms.Sorting import shellsort as sa
 # assert cf
 
-import config
-from DISClib.ADT.graph import gr
-from DISClib.ADT import map as m
+import config as cf
+from DISClib.ADT import graph as gr
+from DISClib.ADT import map as mp
 from DISClib.ADT import list as lt
+from DISClib.DataStructures import mapentry as me
 from DISClib.Algorithms.Graphs import scc
 from DISClib.Algorithms.Graphs import dijsktra as djk
 from DISClib.Utils import error as error
-assert config
+assert cf
 
 """
 Se define la estructura de un catálogo de videos. El catálogo tendrá dos listas, una para los videos, otra para las categorias de
@@ -58,17 +59,84 @@ def newAnalyzer():
                     'countries': None
                     }
 
-        # analyzer['landingPoints'] = m.newMap(numelements=1280,
-        #                              maptype='PROBING',
-        #                              comparefunction=compareLandingPointsIds)
+        analyzer['landingPoints'] = mp.newMap(numelements=1280,
+                                     maptype='PROBING',
+                                     comparefunction=compareLandingPointsIds)
 
         analyzer['connections'] = gr.newGraph(datastructure='ADJ_LIST',
                                               directed=True,
                                               size=3300,
                                               comparefunction=compareConnections)
+
+        analyzer['countries'] = mp.newMap(numelements=300,
+                                          maptype='PROBING')
+
         return analyzer
     except Exception as exp:
         error.reraise(exp, 'model:newAnalyzer')
+
+def prepareData(analyzer, point):
+    connectionsList = lt.newList('ARRAY_LIST', cmpfunction=compareconnections)
+    mp.put(analyzer['landing_points'], point['landing_point_id'], connectionsList)
+
+def loadData(analyzer, connection):
+    entry = mp.get(analyzer['landing_points'], connection['origin'])
+    cList = entry['value']
+    cName = connection['cable_name']
+    if not lt.isPresent(cList, cName):
+        lt.addLast(cList, cName)
+    pName = formatVertex[connection]
+    entry = mp.get(analyzer['info'], pName)
+    if entry is None:
+        connectionsList = lt.newList()
+        mp.put(analyzer['info'], pName, connectionsList)
+    else:
+        connectionsList = me.getValue(entry)
+    lt.addLast(connectionsList, connection)
+
+def loadCountry(analyzer, country):
+    mp.put(analyzer['countries'], country['CountryName'], country)
+
+def addLandingPoints(analyzer):
+    pList = mp.keySet(analyzer['landing_points'])
+    for key in lt.iterator(pList):
+        cList = mp.get(analyzer['landing_points'], key)['value']
+        for cName in lt.iterator(cList):
+            LPname = key + "-" + cName
+            addPoint(analyzer, LPname)
+
+def addPointConnections(analyzer):
+    pList = mp.keySet(analyzer['landing_points'])
+    for key in lt.iterator(pList):
+        cList = mp.get(analyzer['landing_points'], key)['value']
+        prevPoint = None
+        for cable in lt.iterator(cList):
+            origin = key + "-" + cable
+            info = mp.get(analyzer['info'], origin)["value"]
+            for connection in lt.iterator(info):
+                destination = connection['destination'] + "-" + cable
+                addConnection(analyzer, origin, destination, info)
+                addConnection(analyzer, destination, origin, info)
+
+def addPoint(analyzer, pID):
+    """
+    Adiciona un landing_point-cable como un vertice del grafo
+    """
+    try:
+        if not gr.containsVertex(analyzer['connections'], pID):
+            gr.insertVertex(analyzer['connections'], pID)
+        return analyzer
+    except Exception as exp:
+        error.reraise(exp, 'model:addPoint')
+
+def addConnection(analyzer, destination, origin, distance):
+    """
+    Adiciona un arco entre dos landing_points
+    """
+    edge = gr.getEdge(analyzer['connections'], origin, destination)
+    if edge is None:
+        gr.addEdge(analyzer['connections'], origin, destination, distance)
+    return analyzer
 
 # Funciones para agregar informacion al catalogo
 
@@ -81,7 +149,6 @@ def addLandingPoint(analyzer, lp):
         error.reraise(exp, 'model:addLandingPoint')
 
 def addConnection(analyzer, connection):
-
     origin = gr.vertices(analyzer["connections"])[connection["origin"]]
     destination = gr.vertices(analyzer["connections"])[connection["destination"]]
 
@@ -93,6 +160,24 @@ def addConnection(analyzer, connection):
 # Funciones para creacion de datos
 
 # Funciones de consulta
+
+def totalStops(analyzer):
+    """
+    Retorna la cantidad total de vertices del grafo
+    """
+    return gr.numVertices(analyzer['connections'])
+
+def totalConnections(analyzer):
+    """
+    Retorna la cantidad total de arcos del grafo
+    """
+    return gr.numEdges(analyzer['connections'])
+
+def totalCountries(analyzer):
+    """
+    Retorna la cantidad total de países
+    """
+    return mp.size(analyzer['countries'])
 
 def formatVertex(landingPoint):
     vertexId = landingPoint['landing_point_id']

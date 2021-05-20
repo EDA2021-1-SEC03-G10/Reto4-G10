@@ -26,10 +26,10 @@ import controller
 from DISClib.ADT import list as lt
 assert cf
 
-
-lpsfile = 'landing_points.csv'
-connectionsfile = 'connections.csv'
-countriesfile = 'countries.csv'
+initialPoints = None
+landingPointsFile = 'landing_points.csv'
+connectionsFile = 'connections.csv'
+countriesFile = 'countries.csv'
 
 """
 La vista se encarga de la interacción con el usuario
@@ -40,12 +40,10 @@ operación solicitada
 
 def printMenu():
     print("\n")
-    print("*******************************************")
     print("Bienvenido")
-    print("1- Inicializar Analizador")
+    print("1- Inicializar analizador")
     print("2- Cargar información")
     print("0- Salir")
-    print("*******************************************")
 
 catalog = None
 
@@ -61,13 +59,15 @@ while True:
 
     elif int(inputs[0]) == 2:
         print("Cargando información de los archivos ....")
-        controller.loadServices(cont, lpsfile, connectionsfile, countriesfile)
-        
-        # numedges = controller.totalConnections(cont)
-        # numvertex = controller.totalStops(cont)
-        # print('Numero de vertices: ' + str(numvertex))
-        # print('Numero de arcos: ' + str(numedges))
-        # print('El limite de recursion actual: ' + str(sys.getrecursionlimit()))
+        controller.loadServices(cont, landingPointsFile, connectionsFile, countriesFile)        
+        totalEdges = controller.totalConnections(cont)
+        totalVertex = controller.totalStops(cont)
+        totalCountries = controller.totalCountries(cont)
+        print('\n')
+        print('Cantidad total de arcos: ' + str(totalEdges))
+        print('Cantidad total de vertices: ' + str(totalVertex))   
+        print('Cantidad total de países: ' + str(totalCountries))
+        print('El límite de recursión actual: ' + str(sys.getrecursionlimit()))
 
     else:
         sys.exit(0)

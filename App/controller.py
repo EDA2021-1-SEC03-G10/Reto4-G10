@@ -24,7 +24,6 @@ import config as cf
 import model
 import csv
 
-
 """
 El controlador se encarga de mediar entre la vista y el modelo.
 """
@@ -41,21 +40,25 @@ def init():
 
 # Funciones para la carga de datos
 
-def loadServices(analyzer, lpsfile, connectionsfile, countriesfile):
+def loadServices(analyzer, landingPointsFile, connectionsFile, countriesFile):
 
-    lpsfile = cf.data_dir + lpsfile
-    input_file = csv.DictReader(open(lpsfile, encoding="utf-8"), delimiter=",")
+    landingPointsFile = cf.data_dir + landingPointsFile
+    lpFile = csv.DictReader(open(landingPointsFile, encoding="utf-8"), delimiter=",")
+    for lp in lpFile:
+        model.prepareData(analyzer, lp)
 
-    for lp in input_file:
-        model.addLandingPoint(analyzer, lp)
+    connectionsFile = cf.data_dir + connectionsFile
+    cnnFile = csv.DictReader(open(connectionsFile, encoding="utf-8-sig"), delimiter=",")
+    for connection in cnnFile:
+        model.loadData(analyzer, connection)
 
-    connectionsfile = cf.data_dir + connectionsfile
-    input_file = csv.DictReader(open(connectionsfile, encoding="utf-8"), delimiter=",")
+    countriesFile = cf.data_dir + countriesFile    
+    cntFile = csv.DictReader(open(countriesFile, encoding="utf-8"), delimiter=",")
+    for country in cntFile:
+        model.loadCountry(analyzer, country)
 
-    for connection in input_file:
-        model.addConnection(analyzer, connection)
-
-    
+    model.addLandingPoints(analyzer)
+    model.addPointConnections(analyzer)
 
     # lastservice = None
     # for service in input_file:
@@ -72,3 +75,21 @@ def loadServices(analyzer, lpsfile, connectionsfile, countriesfile):
 # Funciones de ordenamiento
 
 # Funciones de consulta sobre el catálogo
+
+def totalStops(analyzer):
+    """
+    Cantidad total de puntos de parada
+    """
+    return model.totalStops(analyzer)
+
+def totalConnections(analyzer):
+    """
+    Cantidad total de conexiones
+    """
+    return model.totalConnections(analyzer)
+
+def totalCountries(analyzer):
+    """
+    Cantidad total de países
+    """
+    return model.totalCountries(analyzer)
