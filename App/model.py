@@ -76,23 +76,23 @@ def newAnalyzer():
         error.reraise(exp, 'model:newAnalyzer')
 
 def prepareData(analyzer, point):
-    connectionsList = lt.newList('ARRAY_LIST', cmpfunction=compareconnections)
-    mp.put(analyzer['landing_points'], point['landing_point_id'], connectionsList)
+    coords = (float(point["latitude"]), float(point["longitude"]))
+    mp.put(analyzer['landingPoints'], point['landing_point_id'], coords)
 
-def loadData(analyzer, connection):
-    entry = mp.get(analyzer['landing_points'], connection['origin'])
-    cList = entry['value']
-    cName = connection['cable_name']
-    if not lt.isPresent(cList, cName):
-        lt.addLast(cList, cName)
-    pName = formatVertex[connection]
-    entry = mp.get(analyzer['info'], pName)
-    if entry is None:
-        connectionsList = lt.newList()
-        mp.put(analyzer['info'], pName, connectionsList)
-    else:
-        connectionsList = me.getValue(entry)
-    lt.addLast(connectionsList, connection)
+# def loadData(analyzer, connection):
+#     entry = mp.get(analyzer['landingPoints'], connection['origin'])
+#     cList = entry['value']
+#     cName = connection['cable_name']
+#     if not lt.isPresent(cList, cName):
+#         lt.addLast(cList, cName)
+#     pName = formatVertex[connection]
+#     entry = mp.get(analyzer['info'], pName)
+#     if entry is None:
+#         connectionsList = lt.newList()
+#         mp.put(analyzer['info'], pName, connectionsList)
+#     else:
+#         connectionsList = me.getValue(entry)
+#     lt.addLast(connectionsList, connection)
 
 def loadCountry(analyzer, country):
     mp.put(analyzer['countries'], country['CountryName'], country)
@@ -105,23 +105,26 @@ def addLandingPoints(analyzer):
             LPname = key + "-" + cName
             addPoint(analyzer, LPname)
 
-def addPointConnections(analyzer):
-    pList = mp.keySet(analyzer['landing_points'])
-    for key in lt.iterator(pList):
-        cList = mp.get(analyzer['landing_points'], key)['value']
-        prevPoint = None
-        for cable in lt.iterator(cList):
-            origin = key + "-" + cable
-            info = mp.get(analyzer['info'], origin)["value"]
-            for connection in lt.iterator(info):
-                destination = connection['destination'] + "-" + cable
-                addConnection(analyzer, origin, destination, info)
-                addConnection(analyzer, destination, origin, info)
+def addPointConnections(analyzer, actualPointList):
+    for fP in lt.iterator(actualPointList):
+        for sP in lt.iterator(actualPointList):
+            if fP != sP:
+                addConnection(analyzer, fP, sP, 0.1)
+
+# def addPointConnections(analyzer):
+#     pList = mp.keySet(analyzer['landing_points'])
+#     for key in lt.iterator(pList):
+#         cList = mp.get(analyzer['landing_points'], key)['value']
+#         prevPoint = None
+#         for cable in lt.iterator(cList):
+#             origin = key + "-" + cable
+#             info = mp.get(analyzer['info'], origin)["value"]
+#             for connection in lt.iterator(info):
+#                 destination = connection['destination'] + "-" + cable
+#                 addConnection(analyzer, origin, destination, info)
+#                 addConnection(analyzer, destination, origin, info)
 
 def addPoint(analyzer, pID):
-    """
-    Adiciona un landing_point-cable como un vertice del grafo
-    """
     try:
         if not gr.containsVertex(analyzer['connections'], pID):
             gr.insertVertex(analyzer['connections'], pID)
@@ -130,9 +133,6 @@ def addPoint(analyzer, pID):
         error.reraise(exp, 'model:addPoint')
 
 def addConnection(analyzer, destination, origin, distance):
-    """
-    Adiciona un arco entre dos landing_points
-    """
     edge = gr.getEdge(analyzer['connections'], origin, destination)
     if edge is None:
         gr.addEdge(analyzer['connections'], origin, destination, distance)

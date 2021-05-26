@@ -45,7 +45,7 @@ def printMenu():
     print("2- Cargar información")
     print("0- Salir")
 
-catalog = None
+cont = None
 
 """
 Menu principal
