@@ -41,6 +41,8 @@ from DISClib.Algorithms.Graphs import scc
 from DISClib.Algorithms.Graphs import dijsktra as djk
 from DISClib.Utils import error as error
 assert cf
+# Se instala Haversine a través del comando "pip install haversine" para calcular distancias en un globo
+import haversine as hs
 
 """
 Se define la estructura de un catálogo de videos. El catálogo tendrá dos listas, una para los videos, otra para las categorias de
@@ -65,8 +67,8 @@ def newAnalyzer():
 
         analyzer['connections'] = gr.newGraph(datastructure='ADJ_LIST',
                                               directed=True,
-                                              size=3300,
-                                              comparefunction=compareConnections)
+                                              size=3300)
+                                              # comparefunction=compareConnections)
 
         analyzer['countries'] = mp.newMap(numelements=300,
                                           maptype='PROBING')
@@ -97,13 +99,13 @@ def prepareData(analyzer, point):
 def loadCountry(analyzer, country):
     mp.put(analyzer['countries'], country['CountryName'], country)
 
-def addLandingPoints(analyzer):
-    pList = mp.keySet(analyzer['landing_points'])
-    for key in lt.iterator(pList):
-        cList = mp.get(analyzer['landing_points'], key)['value']
-        for cName in lt.iterator(cList):
-            LPname = key + "-" + cName
-            addPoint(analyzer, LPname)
+# def addLandingPoints(analyzer):
+#     pList = mp.keySet(analyzer['landing_points'])
+#     for key in lt.iterator(pList):
+#         cList = mp.get(analyzer['landing_points'], key)['value']
+#         for cName in lt.iterator(cList):
+#             LPname = key + "-" + cName
+#             addPoint(analyzer, LPname)
 
 def addPointConnections(analyzer, actualPointList):
     for fP in lt.iterator(actualPointList):
@@ -126,36 +128,49 @@ def addPointConnections(analyzer, actualPointList):
 
 def addPoint(analyzer, pID):
     try:
-        if not gr.containsVertex(analyzer['connections'], pID):
+        if gr.containsVertex(analyzer['connections'], pID) == False:
             gr.insertVertex(analyzer['connections'], pID)
         return analyzer
     except Exception as exp:
         error.reraise(exp, 'model:addPoint')
 
-def addConnection(analyzer, destination, origin, distance):
-    edge = gr.getEdge(analyzer['connections'], origin, destination)
+def addConnection(analyzer, originPoint, destinationPoint, distance):
+    edge = gr.getEdge(analyzer['connections'], originPoint, destinationPoint)
     if edge is None:
-        gr.addEdge(analyzer['connections'], origin, destination, distance)
+        gr.addEdge(analyzer['connections'], originPoint, destinationPoint, distance)
     return analyzer
 
 # Funciones para agregar informacion al catalogo
 
-def addLandingPoint(analyzer, lp):
-    try:
-        if not gr.containsVertex(analyzer['connections'], lp):
-            gr.insertVertex(analyzer['connections'], lp)
-        return analyzer
-    except Exception as exp:
-        error.reraise(exp, 'model:addLandingPoint')
+def addLandingPoint(analyzer, lp, cnn, actualPointList, capitalData):
 
-def addConnection(analyzer, connection):
-    origin = gr.vertices(analyzer["connections"])[connection["origin"]]
-    destination = gr.vertices(analyzer["connections"])[connection["destination"]]
+    if actualPointList is None:
+        actualPointList = lt.newList("ARRAY_LIST")
+    originPoint = cnn["origin"] + '-' + cnn["cable_name"]
+    addPoint(analyzer, originPoint)
+    destinationPoint = cnn["destination"] + '-' + cnn["cable_name"]
+    addPoint(analyzer, destinationPoint)
 
-    edge = gr.getEdge(analyzer['connections'], origin, destination)
-    if edge is None:
-        gr.addEdge(analyzer['connections'], origin, destination, connection["cable_length"])
-    return analyzer
+    if cnn["cable_length"] != "n.a.":
+        length = float(cnn["cable_length"].replace(",", "").split()[0])
+    else:
+        origin = (float(lp["latitude"]), float(lp["longitude"]))
+        destination = mp.get(analyzer["landingPoints"], cnn["destination"])["value"]
+        length = round(hs.haversine(origin, destination), 2)
+    addConnection(analyzer, originPoint, destinationPoint, length)
+    fP = (float(lp["latitude"]), float(lp["longitude"]))
+    laP = (float(capitalData["CapitalLatitude"]), float(capitalData["CapitalLongitude"]))
+    capital = capitalData["CapitalName"] + "-" + capitalData["CountryName"]
+    haversineLength = round(hs.haversine(fP, laP), 2)
+    addConnection(analyzer, originPoint, capital, haversineLength)
+    lt.addLast(actualPointList, originPoint)
+    # try:
+    #     if not gr.containsVertex(analyzer['connections'], lp):
+    #         gr.insertVertex(analyzer['connections'], lp)
+    #     return analyzer
+    # except Exception as exp:
+    #     error.reraise(exp, 'model:addLandingPoint')
+    return actualPointList
 
 # Funciones para creacion de datos
 
@@ -195,14 +210,13 @@ def compareLandingPointsIds(landingPoint, keyvalueLandingPoint):
     else:
         return -1
 
+def compareConnections(firstCnn, secondCnn):
 
-def compareConnections(connection1, connnection2):
-
-    if (connection1["origin"] == connnection2["origin"]):
-        if(connection1["destination"] == connnection2["destination"]):
-            if(connection1["cable_id"] == connnection2["cable_id"]):
-                return 0
-    
-    return -1
+    if firstCnn == secondCnn:
+        return 0
+    elif firstCnn > secondCnn:
+        return 1
+    else:
+        return -1
 
 # Funciones de ordenamiento
