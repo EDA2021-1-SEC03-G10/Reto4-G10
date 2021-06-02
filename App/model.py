@@ -38,6 +38,7 @@ from DISClib.ADT import map as mp
 from DISClib.ADT import list as lt
 from DISClib.DataStructures import mapentry as me
 from DISClib.Algorithms.Graphs import scc as kos
+from DISClib.Algorithms.Graphs import prim as pr
 from DISClib.Algorithms.Graphs import dijsktra as djk
 from DISClib.Utils import error as error
 assert cf
@@ -274,7 +275,19 @@ def findShortestPath(analyzer, pais1, pais2):
     return path, dist
 
 def criticalInfrastructure(analyzer):
-    return 0, 0, 0
+    vertex = gr.numVertices(analyzer["connections"]) 
+    tree = pr.PrimMST(analyzer["connections"]) 
+    weight = pr.weightMST(analyzer["connections"], tree) 
+    branch = pr.edgesMST(analyzer["connections"], tree) 
+    branch = branch["edgeTo"]["table"]["elements"] 
+    max = 0 
+
+    for i in range(len(branch)): 
+        value = branch[i]["value"] 
+        if (value is not None) and (float(value["weight"]) > max): 
+            max = value["weight"] 
+            
+    return vertex, weight, max
 
 def failImpact(analyzer, landingPoint):
     return 0, []
