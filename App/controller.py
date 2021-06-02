@@ -23,7 +23,10 @@
 import config as cf
 import model
 import csv
+import time
+import tracemalloc
 from DISClib.ADT import list as lt
+from DISClib.ADT import stack as st
 
 """
 El controlador se encarga de mediar entre la vista y el modelo.
@@ -41,51 +44,48 @@ def init():
 
 # Funciones para la carga de datos
 
-def loadServices(analyzer, landingPointsFile, connectionsFile, countriesFile):
+def loadConnections(analyzer, landingPointsFile, connectionsFile, countriesFile):
+    delta_time = -1.0
+    delta_memory = -1.0
     
+    tracemalloc.start()
+    start_time = getTime()
+    start_memory = getMemory()
+
     landingPointsList = lt.newList('ARRAY_LIST')
     landingPointsFile = cf.data_dir + landingPointsFile
     lpFile = csv.DictReader(open(landingPointsFile, encoding="utf-8"), delimiter=",")
     for lp in lpFile:
         lt.addLast(landingPointsList, lp)
-        model.prepareData(analyzer, lp)
-
-    connectionsList = lt.newList('ARRAY_LIST')
-    connectionsFile = cf.data_dir + connectionsFile
-    cnnFile = csv.DictReader(open(connectionsFile, encoding="utf-8-sig"), delimiter=",")
-    for cnn in cnnFile:
-        # model.loadData(analyzer, cnn)
-        lt.addLast(connectionsList, cnn)
+        # Por cada landing point en el archivo de entrada, se llama a la función en el modelo
+        model.addLandingPoint(analyzer, lp)
+        model.addCodes(analyzer, lp)
 
     countriesList = lt.newList('ARRAY_LIST')
     countriesFile = cf.data_dir + countriesFile    
     cntFile = csv.DictReader(open(countriesFile, encoding="utf-8"), delimiter=",")
     for ctry in cntFile:
         lt.addLast(countriesList, ctry)
+        # Por cada país en el archivo de entrada, se llama a la función en el modelo
         model.loadCountry(analyzer, ctry)
+    
+    connectionsFile = cf.data_dir + connectionsFile
+    cnnFile = csv.DictReader(open(connectionsFile, encoding="utf-8-sig"), delimiter=",")
+    for cnn in cnnFile:
+        # Por cada conexión en el archivo de entrada, se llama a la función en el modelo
+        model.addConnection(analyzer, cnn)
 
-    for point in lt.iterator(landingPointsList):
-        name = point['name'].split(", ")
-        if len(name) < 2:
-            ctry = 'Micronesia'
-        else:
-            ctry = name[1]
-        for country in lt.iterator(countriesList):
-            if country['CountryName'] == ctry:
-                capital = country['CapitalName'] + "-" + ctry
-                model.addPoint(analyzer, capital)
-                capitalData = country
-                break
-        actualPointList = None
-        for connection in lt.iterator(connectionsList):
-            if connection['origin'] == point['landing_point_id']:
-                actualPointList = model.addLandingPoint(analyzer, point,
-                                                       connection,
-                                                       actualPointList,
-                                                       capitalData)
-        model.addPointConnections(analyzer, actualPointList)
+    # Se crean las conexiónes entre los vertices de cada landing point y entre estos y el vertice de la capital
+    model.addPointConnections(analyzer)
 
-    return analyzer
+    stop_memory = getMemory()
+    stop_time = getTime()
+    tracemalloc.stop()
+
+    delta_time = stop_time - start_time
+    delta_memory = deltaMemory(start_memory, stop_memory)
+
+    return analyzer, lt.firstElement(landingPointsList), lt.firstElement(countriesList), delta_time, delta_memory
 
 # Funciones de ordenamiento
 
@@ -108,3 +108,137 @@ def totalCountries(analyzer):
     Cantidad total de países
     """
     return model.totalCountries(analyzer)
+
+def findClusters(analyzer, landingPoint1, landingPoint2):
+    delta_time = -1.0
+    delta_memory = -1.0
+    
+    tracemalloc.start()
+    start_time = getTime()
+    start_memory = getMemory()
+
+    landingPoint1 = landingPoint1.replace(' ', '').lower()
+    landingPoint2 = landingPoint2.replace(' ', '').lower()
+
+    answer = model.findClusters(analyzer, landingPoint1, landingPoint2)
+
+    stop_memory = getMemory()
+    stop_time = getTime()
+    tracemalloc.stop()
+
+    delta_time = stop_time - start_time
+    delta_memory = deltaMemory(start_memory, stop_memory)
+
+    return analyzer, answer[0], answer[1], delta_time, delta_memory
+
+def findInterLandingPoints(analyzer):
+    delta_time = -1.0
+    delta_memory = -1.0
+    
+    tracemalloc.start()
+    start_time = getTime()
+    start_memory = getMemory()
+
+    answer = model.findInterLandingPoints(analyzer)
+
+    stop_memory = getMemory()
+    stop_time = getTime()
+    tracemalloc.stop()
+
+    delta_time = stop_time - start_time
+    delta_memory = deltaMemory(start_memory, stop_memory)
+
+    return analyzer, answer[0], answer[1], delta_time, delta_memory
+
+def findShortestPath(analyzer, pais1, pais2):
+    delta_time = -1.0
+    delta_memory = -1.0
+    
+    tracemalloc.start()
+    start_time = getTime()
+    start_memory = getMemory()
+
+    answer = model.findShortestPath(analyzer, pais1, pais2)
+
+    path = []
+
+    while st.size(answer[0]) > 0:
+        step = st.pop(answer[0])
+        path.append({'origin': step['vertexA'], 'destination': step['vertexB'], 'distance' :step['weight']})
+
+    stop_memory = getMemory()
+    stop_time = getTime()
+    tracemalloc.stop()
+
+    delta_time = stop_time - start_time
+    delta_memory = deltaMemory(start_memory, stop_memory)
+
+    return analyzer, path, answer[1], delta_time, delta_memory
+
+def criticalInfrastructure(analyzer):
+    delta_time = -1.0
+    delta_memory = -1.0
+    
+    tracemalloc.start()
+    start_time = getTime()
+    start_memory = getMemory()
+
+    answer = model.criticalInfrastructure(analyzer)
+
+    stop_memory = getMemory()
+    stop_time = getTime()
+    tracemalloc.stop()
+
+    delta_time = stop_time - start_time
+    delta_memory = deltaMemory(start_memory, stop_memory)
+
+    return analyzer, answer[0], answer[1], answer[2], delta_time, delta_memory
+
+def failImpact(analyzer, landingPoint):
+    delta_time = -1.0
+    delta_memory = -1.0
+    
+    tracemalloc.start()
+    start_time = getTime()
+    start_memory = getMemory()
+
+    answer = model.failImpact(analyzer, landingPoint)
+
+    stop_memory = getMemory()
+    stop_time = getTime()
+    tracemalloc.stop()
+
+    delta_time = stop_time - start_time
+    delta_memory = deltaMemory(start_memory, stop_memory)
+
+    return analyzer, answer[0], answer[1], delta_time, delta_memory
+
+# Funciones de cálculo de tiempo y memoria
+
+def getTime():
+    """
+    devuelve el instante tiempo de procesamiento en milisegundos
+    """
+    return float(time.perf_counter()*1000)
+
+def getMemory():
+    """
+    toma una muestra de la memoria alocada en instante de tiempo
+    """
+    return tracemalloc.take_snapshot()
+
+
+def deltaMemory(start_memory, stop_memory):
+    """
+    calcula la diferencia en memoria alocada del programa entre dos
+    instantes de tiempo y devuelve el resultado en bytes (ej.: 2100.0 B)
+    """
+    memory_diff = stop_memory.compare_to(start_memory, "filename")
+    delta_memory = 0.0
+
+    # suma de las diferencias en uso de memoria
+    for stat in memory_diff:
+        delta_memory = delta_memory + stat.size_diff
+    # de Byte -> kByte
+    delta_memory = delta_memory/1024.0
+    return delta_memory
