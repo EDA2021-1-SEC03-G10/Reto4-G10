@@ -279,7 +279,7 @@ def findInterLandingPoints(analyzer):
 
     while lli.hasNext(newIterator):
         elt = lli.next(newIterator)
-        cpl = mp.get(analyzer["landingPointsNames"], elt)
+        cpl = mp.get(analyzer["countriesCodes"], elt)
         value = me.getValue(cpl)
         lt.addLast(final, value["id"])
         lt.addLast(final, value["name"])
