@@ -27,6 +27,8 @@ import time
 import tracemalloc
 from DISClib.ADT import list as lt
 from DISClib.ADT import stack as st
+from DISClib.ADT import orderedmap as om
+from DISClib.DataStructures import mapentry as me
 
 """
 El controlador se encarga de mediar entre la vista y el modelo.
@@ -201,7 +203,26 @@ def failImpact(analyzer, landingPoint):
     start_time = getTime()
     start_memory = getMemory()
 
+    landingPoint = landingPoint.replace(' ', '').lower()
+
     answer = model.failImpact(analyzer, landingPoint)
+
+    result = answer[1]
+
+    countries = []
+
+    while om.size(result) > 0:
+        distance = om.maxKey(result)
+        countriesList = me.getValue(om.get(result, om.maxKey(result)))
+
+        for country in lt.iterator(countriesList):
+            countries.append({'country': country, 'distance': distance})
+
+        om.remove(result, distance)
+
+        # country = me.getValue(om.get(result, om.maxKey(result)))
+        # countries.append({'country': country, 'distance': om.maxKey(result)})
+        # om.deleteMax(result)
 
     stop_memory = getMemory()
     stop_time = getTime()
@@ -210,7 +231,7 @@ def failImpact(analyzer, landingPoint):
     delta_time = stop_time - start_time
     delta_memory = deltaMemory(start_memory, stop_memory)
 
-    return analyzer, answer[0], answer[1], delta_time, delta_memory
+    return analyzer, answer[0], countries, delta_time, delta_memory
 
 # Funciones de cálculo de tiempo y memoria
 

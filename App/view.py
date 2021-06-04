@@ -185,7 +185,7 @@ def thread_cycle():
             print("Lista de países afectados: ")
 
             for country in countries:
-                print(country)
+                print(country['country'] + ' - ' + str(country['distance']) + ' km')
 
             print('')
             print("Tiempo [ms]: ", f"{answer[3]:.3f}", "  ||  ",
