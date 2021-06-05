@@ -35,6 +35,7 @@
 import config as cf
 from DISClib.ADT import graph as gr
 from DISClib.ADT import map as mp
+from DISClib.ADT import orderedmap as om
 from DISClib.ADT import list as lt
 from DISClib.DataStructures import linkedlistiterator as lli
 from DISClib.DataStructures import mapentry as me
@@ -348,7 +349,56 @@ def criticalInfrastructure(analyzer):
     return vertex, weight, max
 
 def failImpact(analyzer, landingPoint):
-    return 0, []
+    # Se obtiene el id del landing point a partir de su nombre
+    vertexId = me.getValue(mp.get(analyzer['landingPointNames'], landingPoint))
+
+    # Se obtiene la entrada del mapa para el landing point
+    lp = me.getValue(mp.get(analyzer['landingPoints'], vertexId))
+    # Se obtiene el nombre del país del landing point que falla
+    countryName = lp['country']
+    # Se obtienen los datos del país del landing point que falla
+    country = me.getValue(mp.get(analyzer['countries'], countryName))
+    # Se crea un mapa para almacenar los nombres de los países que estan conectados al landing point que falla
+    countries = mp.newMap(numelements=300, maptype='PROBING')
+
+    # Se obtienen los vértices adyacentes para cada uno de los vertices del landing point
+    for vertex in lt.iterator(lp['vertices']):
+        # Los vertices adyacentes se almacenan en una lista
+        adjVertices = gr.adjacents(analyzer['connections'], vertex)
+        # Para cada vertice adyacente, se obtiene el país
+        for adjVertex in lt.iterator(adjVertices):
+            # Si el vertice adyacente corresponde al vertice de la ciudad capital, se intenta agregar el país actual
+            if adjVertex == country['vertex']:
+                # Se verifica que el país no exista en el listado de resultado
+                if not mp.contains(countries, countryName):
+                    # Se obtiene el arco para poder saber la distancia y se agrega el pais al listado de resultado
+                    ctryEdge = gr.getEdge(analyzer['connections'], vertex, country['vertex'])
+                    mp.put (countries, countryName, ctryEdge['weight'])
+            else:
+                # Si el vertice no corresponde a un vertice de capital, se obtiene su id y luego su entrada en el mapa de landing points
+                adjVertexId = adjVertex.split('-')[0]
+                adjLP = me.getValue(mp.get(analyzer['landingPoints'], adjVertexId))
+
+                # Se verifica si el país del landing point adyacente ya existe en el listado, y si no, se agrega
+                if not mp.contains(countries, adjLP['country']):
+                    adjEdge = gr.getEdge(analyzer['connections'], vertex, adjVertex)
+                    mp.put (countries, adjLP['country'], adjEdge['weight']) 
+    
+    countriesList = mp.keySet(countries)
+    # Se crea un mapa ordenado para el resultado
+    result = om.newMap('BST')
+
+    for ctry in lt.iterator(countriesList):
+        distance = me.getValue(mp.get(countries, ctry))
+        if om.contains(result, distance):
+            ctryList = me.getValue(om.get(result, distance))
+            lt.addLast(ctryList, ctry)
+        else:
+            newList = lt.newList('SINGLE_LINKED', compareCountries)
+            lt.addLast(newList, ctry)
+            om.put(result, distance, newList)
+
+    return mp.size(countries), result
 
 # Funciones utilizadas para comparar elementos dentro de una lista
 
@@ -370,6 +420,12 @@ def compareLandingPointNames(landingPoint1, landingPoint):
 
 def compareVertices(vertex1, vertex2):
     if(vertex1 == vertex2):
+        return 0
+    else:
+        return 1
+
+def compareCountries(country1, country2):
+    if(country1 == country2):
         return 0
     else:
         return 1
