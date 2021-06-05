@@ -116,21 +116,19 @@ def thread_cycle():
 
         elif int(inputs[0]) == 4:
             answer = controller.findInterLandingPoints(cont)
+            totalCables = answer[0]
             landingPoints = answer[1]
-            totalCables = answer[2]
 
             print('')
             print("Lista de landing points: ")
-
-            for lp in landingPoints:
-                print('Nombre: ' + lp['nombre'] + ', País: ' + lp['pais'] + ', Identificador: ' + lp['identificador'])
+            print(landingPoints)
 
             print('')
             print('Total de cables conectados: ' + str(totalCables))
 
             print('')
-            print("Tiempo [ms]: ", f"{answer[3]:.3f}", "  ||  ",
-                "Memoria [kB]: ", f"{answer[4]:.3f}")
+            print("Tiempo [ms]: ", f"{answer[2]:.3f}", "  ||  ",
+                "Memoria [kB]: ", f"{answer[3]:.3f}")
             
         elif int(inputs[0]) == 5:
             pais1 = input("Ingrese el nombre del país 1: ")

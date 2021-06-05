@@ -59,6 +59,7 @@ def loadConnections(analyzer, landingPointsFile, connectionsFile, countriesFile)
         lt.addLast(landingPointsList, lp)
         # Por cada landing point en el archivo de entrada, se llama a la función en el modelo
         model.addLandingPoint(analyzer, lp)
+        model.addCountriesCodes(analyzer, lp)
 
     countriesList = lt.newList('ARRAY_LIST')
     countriesFile = cf.data_dir + countriesFile    
@@ -73,6 +74,7 @@ def loadConnections(analyzer, landingPointsFile, connectionsFile, countriesFile)
     for cnn in cnnFile:
         # Por cada conexión en el archivo de entrada, se llama a la función en el modelo
         model.addConnection(analyzer, cnn)
+        model.addArchConnections(analyzer, cnn)
 
     # Se crean las conexiónes entre los vertices de cada landing point y entre estos y el vertice de la capital
     model.addPointConnections(analyzer)
@@ -147,7 +149,7 @@ def findInterLandingPoints(analyzer):
     delta_time = stop_time - start_time
     delta_memory = deltaMemory(start_memory, stop_memory)
 
-    return analyzer, answer[0], answer[1], delta_time, delta_memory
+    return answer[0], answer[1], delta_time, delta_memory
 
 def findShortestPath(analyzer, pais1, pais2):
     delta_time = -1.0

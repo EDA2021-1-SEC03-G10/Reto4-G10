@@ -36,6 +36,7 @@ import config as cf
 from DISClib.ADT import graph as gr
 from DISClib.ADT import map as mp
 from DISClib.ADT import list as lt
+from DISClib.DataStructures import linkedlistiterator as lli
 from DISClib.DataStructures import mapentry as me
 from DISClib.Algorithms.Graphs import scc as kos
 from DISClib.Algorithms.Graphs import prim as pr
@@ -58,8 +59,11 @@ def newAnalyzer():
     try:
         analyzer = {
                     'landingPoints': None,
+                    'landingPointNames': None,
                     'connections': None,
-                    'countries': None
+                    'arches': None,
+                    'countries': None,
+                    'countriesCodes' : None
                     }
 
         analyzer['landingPoints'] = mp.newMap(numelements=1280,
@@ -75,8 +79,15 @@ def newAnalyzer():
                                               size=3300,
                                               comparefunction = compareLandingPoints)
 
+        analyzer['arches'] = gr.newGraph(datastructure='ADJ_LIST',
+                                              directed=True,
+                                              size=3300,
+                                              comparefunction=compareLandingPoints)
+
         analyzer['countries'] = mp.newMap(numelements=300,
                                           maptype='PROBING')
+
+        analyzer['countriesCodes'] = mp.newMap()
 
         return analyzer
     except Exception as exp:
@@ -120,11 +131,37 @@ def loadCountry(analyzer, country):
         mp.put(analyzer['countries'], country['CountryName'], entry)
     addPoint(analyzer, country['CapitalName'] + "-" + country['CountryName'])
 
+def addCountriesCodes(analyzer, info):
+    mp.put(analyzer["countriesCodes"], str(info["landing_point_id"]), info)
+
 def newCountryEntry(country):
     # Cada entrada del mapa tiene los datos del país junto con una referencia al vertice de la capital
     entry = {'data': country, 
                 'vertex': country['CapitalName'] + "-" + country['CountryName']}
     return entry
+
+def addArch(analyzer, vtx):
+    try:
+        if gr.containsVertex(analyzer["arches"], vtx) == False:
+            gr.insertVertex(analyzer["arches"], vtx)
+        return analyzer
+    except Exception as exp:
+        error.reraise(exp, "model.addArch")
+
+def addArchConnections(analyzer, info):
+    graph = analyzer["arches"]
+    origin = info["origin"]
+    destination = info["destination"]
+
+    addArch(analyzer, origin)
+    addArch(analyzer, destination)
+    length = 0
+
+    if info["cable_length"] != "n.a.":
+        final = ((info["cable_length"]).strip(" km")).split(",")
+        if len(final) > 1:
+            length = final[0] + final[1]
+    gr.addEdge(graph, origin, destination, int(length))
 
 def addPoint(analyzer, pID):
     try:
@@ -254,7 +291,28 @@ def findClusters(analyzer, landingPoint1, landingPoint2):
     return kos.connectedComponents(scc), kos.stronglyConnected(scc, vertexA, vertexB)
 
 def findInterLandingPoints(analyzer):
-    return [], 0
+    total = 0
+    iterator = lli.newIterator(gr.vertices(analyzer["arches"]))
+    vList = lt.newList()
+
+    while lli.hasNext(iterator):
+        vertex = lli.next(iterator)
+        inDeg = gr.indegree(analyzer["arches"], vertex)
+        outDeg = gr.outdegree(analyzer["arches"], vertex)
+        if inDeg >= 1 and outDeg >1:
+            total += 1
+            lt.addLast(vList, vertex)
+
+    final = lt.newList()
+    nIterator = lli.newIterator(vList)
+
+    while lli.hasNext(nIterator):
+        elt = lli.next(nIterator)
+        cpl = mp.get(analyzer["countriesCodes"], elt)
+        value = me.getValue(cpl)
+        lt.addLast(final, value["id"])
+        lt.addLast(final, value["name"])
+    return total, final
 
 def findShortestPath(analyzer, pais1, pais2):
     # Se obtiene el vertice correspondiente al primer país
@@ -294,18 +352,7 @@ def failImpact(analyzer, landingPoint):
 
 # Funciones utilizadas para comparar elementos dentro de una lista
 
-# def compareLandingPointsIds(landingPoint, keyvalueLandingPoint):
-
-#     landingPointCode = keyvalueLandingPoint['key']
-#     if (landingPoint == landingPointCode):
-#         return 0
-#     elif (landingPoint > landingPointCode):
-#         return 1
-#     else:
-#         return -1
-
 def compareLandingPoints(landingPoint, keyvalueLandingPoint):
-
     landingPointCode = keyvalueLandingPoint['key']
     if (landingPoint == landingPointCode):
         return 0
@@ -314,17 +361,7 @@ def compareLandingPoints(landingPoint, keyvalueLandingPoint):
     else:
         return -1
 
-# def compareConnections(firstCnn, secondCnn):
-
-#     if firstCnn == secondCnn:
-#         return 0
-#     elif firstCnn > secondCnn:
-#         return 1
-#     else:
-#         return -1
-
 def compareLandingPointNames(landingPoint1, landingPoint):
-
     landingPoint2 = landingPoint['key']
     if (landingPoint1 == landingPoint2):
         return 0
