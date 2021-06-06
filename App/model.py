@@ -343,7 +343,7 @@ def criticalInfrastructure(analyzer):
 
     for i in range(len(branch)): 
         value = branch[i]["value"] 
-        if (value is not None) and (float(value["weight"]) > max): 
+        if (value != None) and (float(value["weight"]) > max): 
             max = value["weight"] 
             
     return vertex, weight, max
